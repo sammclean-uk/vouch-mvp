@@ -15,17 +15,8 @@ async function handleCreateRequest(formData: FormData) {
   redirect(`/request/${data.id}`)
 }
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: { location?: string; business_type?: string }
-}) {
-  const locationFilter = searchParams.location || ''
-  const businessTypeFilter = searchParams.business_type || ''
-  const requests = await getRequests(
-    locationFilter || undefined,
-    businessTypeFilter || undefined
-  )
+export default async function Home() {
+  const requests = await getRequests()
 
   return (
     <div className="min-h-screen p-4 max-w-4xl mx-auto">
@@ -87,11 +78,7 @@ export default async function Home({
 
       <Separator className="mb-6" />
 
-      <RequestsList
-        initialRequests={requests}
-        initialLocationFilter={locationFilter}
-        initialBusinessTypeFilter={businessTypeFilter}
-      />
+      <RequestsList requests={requests} />
     </div>
   )
 }

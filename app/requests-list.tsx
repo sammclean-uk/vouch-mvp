@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -16,45 +16,23 @@ interface Request {
 }
 
 interface RequestsListProps {
-  initialRequests: Request[]
-  initialLocationFilter: string
-  initialBusinessTypeFilter: string
+  requests: Request[]
 }
 
-export function RequestsList({
-  initialRequests,
-  initialLocationFilter,
-  initialBusinessTypeFilter,
-}: RequestsListProps) {
+export function RequestsList({ requests }: RequestsListProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const [isPending, startTransition] = useTransition()
-  const [locationFilter, setLocationFilter] = useState(initialLocationFilter)
-  const [businessTypeFilter, setBusinessTypeFilter] = useState(initialBusinessTypeFilter)
+  const [locationFilter, setLocationFilter] = useState('')
+  const [businessTypeFilter, setBusinessTypeFilter] = useState('')
 
-  const handleFilterChange = (type: 'location' | 'business_type', value: string) => {
-    const params = new URLSearchParams(searchParams.toString())
-    
-    if (type === 'location') {
-      setLocationFilter(value)
-      if (value) {
-        params.set('location', value)
-      } else {
-        params.delete('location')
-      }
-    } else {
-      setBusinessTypeFilter(value)
-      if (value) {
-        params.set('business_type', value)
-      } else {
-        params.delete('business_type')
-      }
-    }
-
-    startTransition(() => {
-      router.push(`/?${params.toString()}`)
+  const filteredRequests = useMemo(() => {
+    return requests.filter((request) => {
+      const matchesLocation = !locationFilter || 
+        request.location.toLowerCase().includes(locationFilter.toLowerCase())
+      const matchesBusinessType = !businessTypeFilter || 
+        request.business_type.toLowerCase().includes(businessTypeFilter.toLowerCase())
+      return matchesLocation && matchesBusinessType
     })
-  }
+  }, [requests, locationFilter, businessTypeFilter])
 
   return (
     <Card>
@@ -74,8 +52,7 @@ export function RequestsList({
               id="filter-location"
               placeholder="Search location..."
               value={locationFilter}
-              onChange={(e) => handleFilterChange('location', e.target.value)}
-              disabled={isPending}
+              onChange={(e) => setLocationFilter(e.target.value)}
             />
           </div>
           <div>
@@ -86,15 +63,16 @@ export function RequestsList({
               id="filter-business-type"
               placeholder="Search business type..."
               value={businessTypeFilter}
-              onChange={(e) => handleFilterChange('business_type', e.target.value)}
-              disabled={isPending}
+              onChange={(e) => setBusinessTypeFilter(e.target.value)}
             />
           </div>
         </div>
 
-        {initialRequests.length === 0 ? (
+        {filteredRequests.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            No requests found. Create one above!
+            {requests.length === 0 
+              ? 'No requests found. Create one above!'
+              : 'No requests match your filters.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -107,7 +85,7 @@ export function RequestsList({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {initialRequests.map((request) => (
+                {filteredRequests.map((request) => (
                   <TableRow
                     key={request.id}
                     className="cursor-pointer hover:bg-muted/50"
